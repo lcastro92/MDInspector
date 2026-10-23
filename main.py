@@ -31,17 +31,17 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 @app.get("/aviso-legal", response_class=HTMLResponse)
 async def legal_page(request: Request):
-    return templates.TemplateResponse("legal.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="legal.html")
 
 
 @app.get("/privacidad", response_class=HTMLResponse)
 async def privacy_page(request: Request):
-    return templates.TemplateResponse("privacy.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="privacy.html")
 
 
 # Endpoint API Inspección [Checklist 26, 31, 32]
@@ -94,7 +94,7 @@ async def sanitize_file_endpoint(file: UploadFile = File(...)):
 # Directivas robots.txt [Checklist 07]
 @app.get("/robots.txt", response_class=HTMLResponse)
 async def get_robots():
-    content = "User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: https://metainspector.lcastro.com.ar/sitemap.xml"
+    content = "User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: https://md.lcastro.com.ar/sitemap.xml"
     return HTMLResponse(content=content, media_type="text/plain")
 
 
@@ -103,11 +103,11 @@ async def get_robots():
 async def custom_404_handler(request: Request, exc):
     if request.url.path.startswith("/api/"):
         return JSONResponse(status_code=404, content={"error": "Recurso no encontrado"})
-    return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
+    return templates.TemplateResponse(request=request, name="404.html", status_code=404)
 
 
 @app.exception_handler(500)
 async def custom_500_handler(request: Request, exc):
     if request.url.path.startswith("/api/"):
         return JSONResponse(status_code=500, content={"error": "Error interno del servidor"})
-    return templates.TemplateResponse("500.html", {"request": request}, status_code=500)
+    return templates.TemplateResponse(request=request, name="500.html", status_code=500)
