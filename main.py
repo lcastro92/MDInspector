@@ -58,12 +58,15 @@ async def inspect_file(file: UploadFile = File(...)):
 
     filename = file.filename.lower()
     
-    if filename.endswith((".jpg", ".jpeg", ".png", ".webp", ".tiff")):
+    if filename.endswith((".jpg", ".jpeg", ".png", ".webp", ".tiff", ".heic", ".heif")):
         data = extract_image_metadata(contents, file.filename)
     elif filename.endswith(".pdf"):
         data = extract_pdf_metadata(contents, file.filename)
     else:
-        raise HTTPException(status_code=400, detail="Formato no soportado. Usá JPG, PNG, WEBP, TIFF o PDF.")
+        raise HTTPException(
+            status_code=400, 
+            detail="Formato no soportado. Usá JPG, PNG, WEBP, TIFF, HEIC o PDF."
+        )
 
     return data
 
@@ -74,7 +77,7 @@ async def sanitize_file_endpoint(file: UploadFile = File(...)):
     contents = await file.read()
     filename = file.filename.lower()
 
-    if filename.endswith((".jpg", ".jpeg", ".png", ".webp", ".tiff")):
+    if filename.endswith((".jpg", ".jpeg", ".png", ".webp", ".tiff", ".heic", ".heif")):
         clean_bytes = sanitize_image(contents)
         media_type = file.content_type or "image/jpeg"
     elif filename.endswith(".pdf"):
