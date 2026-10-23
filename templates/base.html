@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Checklist [05]: Meta Títulos, Descripciones y Open Graph -->
+    <title>{% block title %}MetaInspector | Lector de Metadatos EXIF & PDF Inspector{% endblock %}</title>
+    <meta name="description" content="Inspecciona y elimina metadatos EXIF y GPS de imágenes y PDFs de forma gratuita, segura e instantánea sin guardar tus archivos.">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MetaInspector | Extractor y Limpiador de Metadatos">
+    <meta property="og:description" content="Descubrí y remové información oculta (GPS, cámara, autor) en tus archivos.">
+    <meta property="og:url" content="https://metainspector.lcastro.com.ar">
+
+    <!-- Checklist [09]: Favicons Multidispositivo -->
+    <link rel="icon" href="/static/favicon.ico" sizes="any">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="/static/site.webmanifest">
+
+    <!-- Checklist [15]: Tailwind CSS vía CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Checklist [06]: Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "MetaInspector",
+      "url": "https://metainspector.lcastro.com.ar",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "All",
+      "description": "Herramienta online para inspección y sanitización de metadatos en imágenes y archivos PDF."
+    }
+    </script>
+</head>
+<body class="flex flex-col min-h-screen font-sans bg-slate-900 text-slate-100">
+
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="/" class="flex items-center space-x-2 text-xl font-bold tracking-tight text-emerald-400 hover:text-emerald-300 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                <span>MetaInspector</span>
+            </a>
+            <nav class="flex items-center space-x-4 text-sm font-medium">
+                <a href="/#inspector" class="hover:text-emerald-400 transition-colors">Herramienta</a>
+                <!-- Checklist [36, 38]: CTA WhatsApp -->
+                <a href="https://wa.me/?text=Hola%2C%20estoy%20usando%20MetaInspector%20para%20limpiar%20metadatos%20de%20mis%20fotos" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                   aria-label="Compartir en WhatsApp">
+                    Compartir
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Checklist [01, 02]: Enlaces Legales -->
+    <footer class="border-t border-slate-800 bg-slate-950 py-6 text-slate-400 text-sm mt-auto">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p>&copy; 2026 MetaInspector. Procesamiento seguro en RAM sin almacenamiento permanente.</p>
+            <div class="flex space-x-6 text-xs">
+                <a href="/aviso-legal" class="hover:underline">Aviso Legal</a>
+                <a href="/privacidad" class="hover:underline">Política de Privacidad</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Checklist [03]: Banner de Consentimiento de Cookies (localStorage) -->
+    <div id="cookie-banner" class="hidden fixed bottom-4 right-4 max-w-md bg-slate-800 border border-slate-700 p-4 rounded-xl shadow-2xl z-50">
+        <p class="text-xs text-slate-300 mb-3">Utilizamos almacenamiento local técnico exclusivamente para recordar tus preferencias de análisis.</p>
+        <div class="flex justify-end">
+            <button id="accept-cookies" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-md font-medium">Aceptar</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const banner = document.getElementById("cookie-banner");
+            const btn = document.getElementById("accept-cookies");
+            if (!localStorage.getItem("cookies_accepted")) banner.classList.remove("hidden");
+            btn.addEventListener("click", function() {
+                localStorage.setItem("cookies_accepted", "true");
+                banner.classList.add("hidden");
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
