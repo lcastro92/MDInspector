@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section id="inspector" class="max-w-4xl mx-auto space-y-8 py-4">
+    <div class="text-center space-y-3">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-50 tracking-tight">Inspector & Limpiador de Metadatos</h1>
+        <p class="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
+            Arrastrá una imagen (JPG, PNG, WEBP) o archivo PDF para auditar su información oculta o descargarlo sanitizado.
+        </p>
+    </div>
+
+    <!-- Area Drag and Drop -->
+    <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-800/50 rounded-2xl p-8 text-center cursor-pointer transition-all">
+        <input type="file" id="file-input" class="hidden" accept=".jpg,.jpeg,.png,.webp,.tiff,.pdf">
+        <div class="space-y-3">
+            <div class="inline-flex p-3 bg-emerald-500/10 text-emerald-400 rounded-full">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+            </div>
+            <p class="text-slate-200 font-semibold text-base">Hacé clic para seleccionar o arrastrá tu archivo acá</p>
+            <p class="text-slate-500 text-xs">Formatos soportados: JPG, PNG, WEBP, TIFF, PDF (Máx 20MB)</p>
+        </div>
+    </div>
+
+    <div id="spinner" class="hidden text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent"></div>
+        <p class="mt-2 text-sm text-slate-400">Inspeccionando estructura interna...</p>
+    </div>
+
+    <p id="error-msg" class="hidden text-center text-sm text-rose-400 font-medium"></p>
+
+    <!-- Dashboard de Resultados -->
+    <div id="results" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row items-center justify-between bg-slate-800/80 border border-slate-700/60 p-4 rounded-2xl gap-4">
+            <div>
+                <span id="res-filename" class="font-bold text-slate-100 text-lg block"></span>
+                <span id="res-type" class="text-xs text-emerald-400 font-mono font-semibold"></span>
+            </div>
+            <button id="btn-sanitize" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                Descargar sin metadatos
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="cards-grid"></div>
+
+        <!-- Raw Metadata Viewer -->
+        <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6">
+            <h2 class="text-lg font-bold text-slate-100 mb-3">Metadatos Completos Registrados</h2>
+            <div id="raw-container" class="bg-slate-900 p-4 rounded-xl font-mono text-xs text-slate-300 max-h-60 overflow-y-auto space-y-1"></div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("file-input");
+    const spinner = document.getElementById("spinner");
+    const results = document.getElementById("results");
+    const errorMsg = document.getElementById("error-msg");
+    const btnSanitize = document.getElementById("btn-sanitize");
+    let currentFile = null;
+
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("border-emerald-500"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("border-emerald-500"));
+    dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-emerald-500");
+        if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", (e) => { if (e.target.files.length) processFile(e.target.files[0]); });
+
+    async function processFile(file) {
+        currentFile = file;
+        errorMsg.classList.add("hidden");
+        results.classList.add("hidden");
+        spinner.classList.remove("hidden");
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch("/api/v1/inspect", { method: "POST", body: formData });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || "Error al procesar el archivo.");
+            renderResults(data);
+        } catch (err) {
+            errorMsg.textContent = err.message;
+            errorMsg.classList.remove("hidden");
+        } finally {
+            spinner.classList.add("hidden");
+        }
+    }
+
+    function renderResults(data) {
+        document.getElementById("res-filename").textContent = data.filename;
+        document.getElementById("res-type").textContent = data.type.toUpperCase() + (data.format ? ` (${data.format})` : "");
+        
+        const grid = document.getElementById("cards-grid");
+        grid.innerHTML = "";
+
+        if (data.type === "image") {
+            grid.innerHTML += createCard("Dimensiones", data.dimensions);
+            grid.innerHTML += createCard("Cámara / Dispositivo", data.camera);
+            grid.innerHTML += createCard("Fecha de Toma", data.datetime);
+            grid.innerHTML += createCard("Software", data.software);
+            if (data.gps) {
+                grid.innerHTML += createCard("Ubicación GPS", `${data.gps.latitude.toFixed(5)}, ${data.gps.longitude.toFixed(5)}`);
+            }
+        } else {
+            grid.innerHTML += createCard("Título Documento", data.title);
+            grid.innerHTML += createCard("Autor", data.author);
+            grid.innerHTML += createCard("Creador / Software", data.producer);
+            grid.innerHTML += createCard("Cantidad de Páginas", data.page_count + " páginas");
+        }
+
+        const rawContainer = document.getElementById("raw-container");
+        rawContainer.innerHTML = "";
+        const raw = data.raw_exif || data.raw_metadata || {};
+        if (Object.keys(raw).length === 0) {
+            rawContainer.innerHTML = "<p class='text-slate-500'>No se encontraron etiquetas EXIF/Metadatos adicionales.</p>";
+        } else {
+            Object.entries(raw).forEach(([k, v]) => {
+                rawContainer.innerHTML += `<div><span class="text-emerald-400">${k}:</span> ${v}</div>`;
+            });
+        }
+
+        results.classList.remove("hidden");
+    }
+
+    function createCard(title, val) {
+        return `
+            <div class="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl">
+                <span class="text-slate-400 text-xs block">${title}</span>
+                <span class="font-semibold text-slate-100 text-sm break-all">${val || "No registrado"}</span>
+            </div>
+        `;
+    }
+
+    btnSanitize.addEventListener("click", async () => {
+        if (!currentFile) return;
+        const formData = new FormData();
+        formData.append("file", currentFile);
+
+        const res = await fetch("/api/v1/sanitize", { method: "POST", body: formData });
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `clean_${currentFile.name}`;
+        a.click();
+    });
+});
+</script>
+{% endblock %}
