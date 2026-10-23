@@ -85,8 +85,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const res = await fetch("/api/v1/inspect", { method: "POST", body: formData });
+            
+            // Validar si la respuesta devuelta es JSON antes de parsear
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new Error(`El servidor devolvió una respuesta no válida (HTTP ${res.status}).`);
+            }
+
             const data = await res.json();
-            if (!res.ok) throw new Error(data.detail || "Error al procesar el archivo.");
+            if (!res.ok) throw new Error(data.detail || data.error || "Error al procesar el archivo.");
             renderResults(data);
         } catch (err) {
             errorMsg.textContent = err.message;
@@ -146,13 +153,22 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData();
         formData.append("file", currentFile);
 
-        const res = await fetch("/api/v1/sanitize", { method: "POST", body: formData });
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `clean_${currentFile.name}`;
-        a.click();
+        try {
+            const res = await fetch("/api/v1/sanitize", { method: "POST", body: formData });
+            if (!res.ok) {
+                throw new Error(`Error al sanitizar el archivo (HTTP ${res.status})`);
+            }
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `clean_${currentFile.name}`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            errorMsg.textContent = err.message;
+            errorMsg.classList.remove("hidden");
+        }
     });
 });
 </script>
